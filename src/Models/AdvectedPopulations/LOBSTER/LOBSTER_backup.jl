@@ -97,11 +97,6 @@ struct LOBSTER{FT, B, W} <: AbstractContinuousFormBiogeochemistry
     fast_sinking_mortality_fraction :: FT
     dissolved_organic_breakdown_rate :: FT
     zooplankton_calcite_dissolution :: FT
-    semi_refractory_dissolved_organic_percentage :: FT 
-    refractory_dissolved_organic_percentage :: FT 
-    semi_refractory_dissolved_organic_breakdown_rate :: FT 
-    refractory_dissolved_organic_breakdown_rate :: FT 
-    microbial_carbon_pump_efficiency :: FT 
 
     optionals :: B
 
@@ -136,11 +131,6 @@ struct LOBSTER{FT, B, W} <: AbstractContinuousFormBiogeochemistry
                      fast_sinking_mortality_fraction::FT,
                      dissolved_organic_breakdown_rate::FT,
                      zooplankton_calcite_dissolution::FT,
-                     semi_refractory_dissolved_organic_percentage::FT, #changed
-                     refractory_dissolved_organic_percentage::FT, #changed
-                     semi_refractory_dissolved_organic_breakdown_rate::FT, #changed
-                     refractory_dissolved_organic_breakdown_rate::FT, #changed
-                     microbial_carbon_pump_efficiency::FT, #changed, percentage of consumed DOM that becomes RDOM
 
                      optionals::B,
                 
@@ -175,11 +165,6 @@ struct LOBSTER{FT, B, W} <: AbstractContinuousFormBiogeochemistry
                              fast_sinking_mortality_fraction,
                              dissolved_organic_breakdown_rate,
                              zooplankton_calcite_dissolution,
-                             semi_refractory_dissolved_organic_percentage, #changed
-                             refractory_dissolved_organic_percentage, #changed
-                             semi_refractory_dissolved_organic_breakdown_rate, #changed
-                             refractory_dissolved_organic_breakdown_rate, #changed
-                             microbial_carbon_pump_efficiency, #changed
 
                              optionals,
 
@@ -298,11 +283,6 @@ function LOBSTER(; grid,
                    fast_sinking_mortality_fraction::FT = 0.5,
                    dissolved_organic_breakdown_rate::FT = 3.86e-7, # 1/s
                    zooplankton_calcite_dissolution::FT = 0.3,
-                   semi_refractory_dissolved_organic_percentage::FT = 0.0, # changed, should be 0.17
-                   refractory_dissolved_organic_percentage::FT = 0.0, # changed, should be 0.3
-                   semi_refractory_dissolved_organic_breakdown_rate::FT = 0.0, # changed, should be 3.86e-8, # 1/s
-                   refractory_dissolved_organic_breakdown_rate::FT = 0.0, # changed, should be 3.17e-10, # 1/s
-                   microbial_carbon_pump_efficiency::FT = 0.0, # changed, should be 0.06
 
                    surface_photosynthetically_active_radiation = default_surface_PAR,
 
@@ -360,11 +340,6 @@ function LOBSTER(; grid,
                                          fast_sinking_mortality_fraction,
                                          dissolved_organic_breakdown_rate,
                                          zooplankton_calcite_dissolution,
-                                         semi_refractory_dissolved_organic_percentage, #changed
-                                         refractory_dissolved_organic_percentage, #changed
-                                         semi_refractory_dissolved_organic_breakdown_rate, #changed
-                                         refractory_dissolved_organic_breakdown_rate, #changed
-                                         microbial_carbon_pump_efficiency, #changed
 
                                          optionals,
 
@@ -389,34 +364,28 @@ function LOBSTER(; grid,
 end
 
 # wrote this functionally and it took 2.5x longer so even though this is long going to use this way instead
-@inline required_biogeochemical_tracers(::LOBSTER{<:Any, <:Val{(false, false, false)}, <:Any}) = (:NO₃, :NH₄, :P, :Z, :sPOM, :bPOM, :DOM, :SRDOM, :RDOM)
-@inline required_biogeochemical_tracers(::LOBSTER{<:Any, <:Val{(true, false, false)}, <:Any}) = (:NO₃, :NH₄, :P, :Z, :sPOM, :bPOM, :DOM, :SRDOM, :RDOM, :DIC, :Alk)
-@inline required_biogeochemical_tracers(::LOBSTER{<:Any, <:Val{(false, true, false)}, <:Any}) = (:NO₃, :NH₄, :P, :Z, :sPOM, :bPOM, :DOM, :SRDOM, :RDOM, :O₂)
-@inline required_biogeochemical_tracers(::LOBSTER{<:Any, <:Val{(false, false, true)}, <:Any}) = (:NO₃, :NH₄, :P, :Z, :sPON, :bPON, :DON, :SRDON, :RDON, :sPOC, :bPOC, :DOC, :SRDOC, :RDOC)
-@inline required_biogeochemical_tracers(::LOBSTER{<:Any, <:Val{(true, true, false)}, <:Any}) = (:NO₃, :NH₄, :P, :Z, :sPOM, :bPOM, :DOM, :SRDOM, :RDOM, :DIC, :Alk, :O₂)
-@inline required_biogeochemical_tracers(::LOBSTER{<:Any, <:Val{(true, false, true)}, <:Any}) = (:NO₃, :NH₄, :P, :Z, :sPON, :bPON, :DON, :SRDON, :RDON, :DIC, :Alk, :sPOC, :bPOC, :DOC, :SRDOC, :RDOC)
-@inline required_biogeochemical_tracers(::LOBSTER{<:Any, <:Val{(false, true, true)}, <:Any}) = (:NO₃, :NH₄, :P, :Z, :sPON, :bPON, :DON, :SRDON, :RDON, :O₂, :sPOC, :bPOC, :DOC, :SRDOC, :RDOC)
-@inline required_biogeochemical_tracers(::LOBSTER{<:Any, <:Val{(true, true, true)}, <:Any}) = (:NO₃, :NH₄, :P, :Z, :sPON, :bPON, :DON, :SRDON, :RDON, :DIC, :Alk, :O₂, :sPOC, :bPOC, :DOC, :SRDOC, :RDOC)
+@inline required_biogeochemical_tracers(::LOBSTER{<:Any, <:Val{(false, false, false)}, <:Any}) = (:NO₃, :NH₄, :P, :Z, :sPOM, :bPOM, :DOM)
+@inline required_biogeochemical_tracers(::LOBSTER{<:Any, <:Val{(true, false, false)}, <:Any}) = (:NO₃, :NH₄, :P, :Z, :sPOM, :bPOM, :DOM, :DIC, :Alk)
+@inline required_biogeochemical_tracers(::LOBSTER{<:Any, <:Val{(false, true, false)}, <:Any}) = (:NO₃, :NH₄, :P, :Z, :sPOM, :bPOM, :DOM, :O₂)
+@inline required_biogeochemical_tracers(::LOBSTER{<:Any, <:Val{(false, false, true)}, <:Any}) = (:NO₃, :NH₄, :P, :Z, :sPON, :bPON, :DON, :sPOC, :bPOC, :DOC)
+@inline required_biogeochemical_tracers(::LOBSTER{<:Any, <:Val{(true, true, false)}, <:Any}) = (:NO₃, :NH₄, :P, :Z, :sPOM, :bPOM, :DOM, :DIC, :Alk, :O₂)
+@inline required_biogeochemical_tracers(::LOBSTER{<:Any, <:Val{(true, false, true)}, <:Any}) = (:NO₃, :NH₄, :P, :Z, :sPON, :bPON, :DON, :DIC, :Alk, :sPOC, :bPOC, :DOC)
+@inline required_biogeochemical_tracers(::LOBSTER{<:Any, <:Val{(false, true, true)}, <:Any}) = (:NO₃, :NH₄, :P, :Z, :sPON, :bPON, :DON, :O₂, :sPOC, :bPOC, :DOC)
+@inline required_biogeochemical_tracers(::LOBSTER{<:Any, <:Val{(true, true, true)}, <:Any}) = (:NO₃, :NH₄, :P, :Z, :sPON, :bPON, :DON, :DIC, :Alk, :O₂, :sPOC, :bPOC, :DOC)
 
 required_biogeochemical_auxiliary_fields(::LOBSTER) = (:PAR, )
 
 const small_detritus = Union{Val{:sPON}, Val{:sPOC}}
 const large_detritus = Union{Val{:bPON}, Val{:bPOC}}
 const dissolved_organic_matter = Union{Val{:DON}, Val{:DOC}}
-const semi_refractory_dissolved_organic_matter = Union{Val{:SRDON}, Val{:SRDOC}}
-const refractory_dissolved_organic_matter = Union{Val{:RDON}, Val{:RDOC}}
 
 const sPOM = Union{Val{:sPOM}, Val{:sPON}}
 const bPOM = Union{Val{:bPOM}, Val{:bPON}}
 const DOM = Union{Val{:DOM}, Val{:DON}}
-const SRDOM = Union{Val{:SRDOM}, Val{:SRDON}}
-const RDOM = Union{Val{:RDOM}, Val{:RDON}}
 
 @inline biogeochemical_drift_velocity(bgc::LOBSTER, ::small_detritus) = biogeochemical_drift_velocity(bgc, Val(:sPOM))
 @inline biogeochemical_drift_velocity(bgc::LOBSTER, ::large_detritus) = biogeochemical_drift_velocity(bgc, Val(:bPOM))
 @inline biogeochemical_drift_velocity(bgc::LOBSTER, ::dissolved_organic_matter) = biogeochemical_drift_velocity(bgc, Val(:DOM))
-@inline biogeochemical_drift_velocity(bgc::LOBSTER, ::semi_refractory_dissolved_organic_matter) = biogeochemical_drift_velocity(bgc, Val(:SRDOM))
-@inline biogeochemical_drift_velocity(bgc::LOBSTER, ::refractory_dissolved_organic_matter) = biogeochemical_drift_velocity(bgc, Val(:RDOM))
 
 @inline function biogeochemical_drift_velocity(bgc::LOBSTER, ::Val{tracer_name}) where tracer_name
     if tracer_name in keys(bgc.sinking_velocities)
@@ -460,11 +429,6 @@ adapt_structure(to, lobster::LOBSTER) =
             adapt(to, lobster.fast_sinking_mortality_fraction),
             adapt(to, lobster.dissolved_organic_breakdown_rate),
             adapt(to, lobster.zooplankton_calcite_dissolution),
-            adapt(to, lobster.semi_refractory_dissolved_organic_percentage),  #change
-            adapt(to, lobster.refractory_dissolved_organic_percentage),#change
-            adapt(to, lobster.semi_refractory_dissolved_organic_breakdown_rate),#change
-            adapt(to, lobster.refractory_dissolved_organic_breakdown_rate),#change
-            adapt(to, lobster.microbial_carbon_pump_efficiency),#change
             adapt(to, lobster.optionals),
             adapt(to, lobster.sinking_velocities))
 
@@ -496,21 +460,16 @@ const VariableRedfieldLobster = Union{LOBSTER{<:Any, <:Val{(false, false, true)}
 @inline redfield(::Val{:P}, bgc::LOBSTER) = (1 + bgc.organic_carbon_calcate_ratio) * bgc.phytoplankton_redfield
 @inline redfield(::Val{:Z}, bgc::LOBSTER) = bgc.phytoplankton_redfield
 @inline redfield(::Union{Val{:NO₃}, Val{:NH₄}, Val{:Alk}, Val{:O₂}}, bgc::LOBSTER) = 0
-@inline redfield(::Union{Val{:sPOM}, Val{:bPOM}, Val{:DOM}, Val{:SRDOM}, Val{:RDOM}}, bgc::LOBSTER) = bgc.organic_redfield  #change
-@inline redfield(::Union{Val{:sPOC}, Val{:bPOC}, Val{:DOC}, Val{:SRDOC}, Val{:RDOC}, Val{:DIC}}, bgc::LOBSTER) = 1   #change
+@inline redfield(::Union{Val{:sPOM}, Val{:bPOM}, Val{:DOM}}, bgc::LOBSTER) = bgc.organic_redfield
+@inline redfield(::Union{Val{:sPOC}, Val{:bPOC}, Val{:DOC}, Val{:DIC}}, bgc::LOBSTER) = 1
 
 @inline redfield(i, j, k, ::Val{:sPON}, bgc::VariableRedfieldLobster, tracers) = @inbounds tracers.sPOC[i, j, k] / tracers.sPON[i, j, k]
 @inline redfield(i, j, k, ::Val{:bPON}, bgc::VariableRedfieldLobster, tracers) = @inbounds tracers.bPOC[i, j, k] / tracers.bPON[i, j, k]
 @inline redfield(i, j, k, ::Val{:DON}, bgc::VariableRedfieldLobster, tracers) = @inbounds tracers.DOC[i, j, k] / tracers.DON[i, j, k]
-@inline redfield(i, j, k, ::Val{:SRDON}, bgc::VariableRedfieldLobster, tracers) = @inbounds tracers.SRDOC[i, j, k] / tracers.SRDON[i, j, k]
-@inline redfield(i, j, k, ::Val{:RDON}, bgc::VariableRedfieldLobster, tracers) = @inbounds tracers.RDOC[i, j, k] / tracers.RDON[i, j, k]
-
 
 @inline redfield(::Val{:sPON}, bgc::VariableRedfieldLobster, tracers) = tracers.sPOC / tracers.sPON
 @inline redfield(::Val{:bPON}, bgc::VariableRedfieldLobster, tracers) = tracers.bPOC / tracers.bPON
 @inline redfield(::Val{:DON}, bgc::VariableRedfieldLobster, tracers) = tracers.DOC / tracers.DON
-@inline redfield(::Val{:SRDON}, bgc::VariableRedfieldLobster, tracers) = tracers.SRDOC / tracers.SRDON
-@inline redfield(::Val{:RDON}, bgc::VariableRedfieldLobster, tracers) = tracers.RDOC / tracers.RDON
 
 @inline nitrogen_flux(i, j, k, grid, advection, bgc::LOBSTER, tracers) = 
     sinking_flux(i, j, k, grid, advection, Val(:sPOM), bgc, tracers) +
@@ -528,8 +487,8 @@ const VariableRedfieldLobster = Union{LOBSTER{<:Any, <:Val{(false, false, true)}
 
 @inline remineralisation_receiver(::LOBSTER) = :NH₄
 
-@inline conserved_tracers(::LOBSTER) = (:NO₃, :NH₄, :P, :Z, :sPOM, :bPOM, :DOM, :SRDOM, :RDOM)
-@inline conserved_tracers(::VariableRedfieldLobster) = (:NO₃, :NH₄, :P, :Z, :sPON, :bPON, :DON, :SRDON, :RDON)
+@inline conserved_tracers(::LOBSTER) = (:NO₃, :NH₄, :P, :Z, :sPOM, :bPOM, :DOM)
+@inline conserved_tracers(::VariableRedfieldLobster) = (:NO₃, :NH₄, :P, :Z, :sPON, :bPON, :DON)
 
 @inline sinking_tracers(::LOBSTER) = (:sPOM, :bPOM)
 @inline sinking_tracers(::VariableRedfieldLobster) = (:sPON, :bPON, :sPOC, :bPOC)

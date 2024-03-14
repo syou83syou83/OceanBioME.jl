@@ -9,7 +9,7 @@
 @inline Lₙₕ₄(NH₄, kₙₕ₄) = max(0, NH₄ / (NH₄ + kₙₕ₄))
 
 # Nutrients
-@inline function (bgc::LOBSTER)(::Val{:NO₃}, x, y, z, t, NO₃, NH₄, P, Z, sPOM, bPOM, DOM, SRDOM, RDOM, PAR)
+@inline function (bgc::LOBSTER)(::Val{:NO₃}, x, y, z, t, NO₃, NH₄, P, Z, sPOM, bPOM, DOM, PAR)
     μₚ = bgc.maximum_phytoplankton_growthrate
     kₚₐᵣ = bgc.light_half_saturation
     ψ = bgc.nitrate_ammonia_inhibition
@@ -19,7 +19,7 @@
     return μₙ*NH₄ - μₚ*Lₚₐᵣ(PAR, kₚₐᵣ)*Lₙₒ₃(NO₃, NH₄, ψ, kₙₒ₃)*P
 end
 
-@inline function (bgc::LOBSTER)(::Val{:NH₄}, x, y, z, t, NO₃, NH₄, P, Z, sPOM, bPOM, DOM, SRDOM, RDOM, PAR)
+@inline function (bgc::LOBSTER)(::Val{:NH₄}, x, y, z, t, NO₃, NH₄, P, Z, sPOM, bPOM, DOM, PAR)
     αᵖ = bgc.ammonia_fraction_of_exudate
     γ = bgc.phytoplankton_exudation_fraction
     μₚ = bgc.maximum_phytoplankton_growthrate
@@ -34,9 +34,6 @@ end
     μᵈᵈ = bgc.large_detritus_remineralisation_rate
     μᵈᵒᵐ = bgc.dissolved_organic_breakdown_rate
     μᶻ = bgc.zooplankton_excretion_rate
-    μˢʳᵈᵒᵐ = bgc.semi_refractory_dissolved_organic_breakdown_rate
-    μʳᵈᵒᵐ = bgc.refractory_dissolved_organic_breakdown_rate
-    ηᵈᵒᵐ  = bgc.microbial_carbon_pump_efficiency
 
     return (αᵖ * γ * μₚ * Lₚₐᵣ(PAR, kₚₐᵣ) * (Lₙₒ₃(NO₃, NH₄, ψ, kₙₒ₃) + Lₙₕ₄(NH₄, kₙₕ₄)) * P 
             - μₚ * Lₚₐᵣ(PAR, kₚₐᵣ) * Lₙₕ₄(NH₄, kₙₕ₄) * P
@@ -44,12 +41,10 @@ end
             + αᶻ * μᶻ * Z
             + αᵈ * μᵈ * sPOM
             + αᵈ * μᵈᵈ * bPOM
-            + (1 - ηᵈᵒᵐ) * μᵈᵒᵐ * DOM
-            + μˢʳᵈᵒᵐ * SRDOM
-            + μʳᵈᵒᵐ * RDOM)
+            + μᵈᵒᵐ * DOM)
 end
 
-@inline function (bgc::LOBSTER)(::Val{:DOM}, x, y, z, t, NO₃, NH₄, P, Z, sPOM, bPOM, DOM, SRDOM, RDOM, PAR)
+@inline function (bgc::LOBSTER)(::Val{:DOM}, x, y, z, t, NO₃, NH₄, P, Z, sPOM, bPOM, DOM, PAR)
     αᵖ = bgc.ammonia_fraction_of_exudate
     γ = bgc.phytoplankton_exudation_fraction
     μₚ = bgc.maximum_phytoplankton_growthrate
@@ -63,68 +58,16 @@ end
     μᵈᵈ = bgc.large_detritus_remineralisation_rate
     μᵈᵒᵐ = bgc.dissolved_organic_breakdown_rate
     μᶻ = bgc.zooplankton_excretion_rate
-    ρˢʳᵈᵒᵐ = bgc.semi_refractory_dissolved_organic_percentage
-    ρʳᵈᵒᵐ = bgc.refractory_dissolved_organic_percentage
 
-    return ((1 - ρˢʳᵈᵒᵐ - ρʳᵈᵒᵐ) * ((1 - αᵖ) * γ * μₚ * Lₚₐᵣ(PAR, kₚₐᵣ) * (Lₙₒ₃(NO₃, NH₄, ψ, kₙₒ₃) + Lₙₕ₄(NH₄, kₙₕ₄)) * P 
+    return ((1 - αᵖ) * γ * μₚ * Lₚₐᵣ(PAR, kₚₐᵣ) * (Lₙₒ₃(NO₃, NH₄, ψ, kₙₒ₃) + Lₙₕ₄(NH₄, kₙₕ₄)) * P 
             + (1 - αᶻ) * μᶻ * Z
             + (1 - αᵈ) * μᵈ * sPOM
-            + (1 - αᵈ) * μᵈᵈ * bPOM)
+            + (1 - αᵈ) * μᵈᵈ * bPOM
             - μᵈᵒᵐ * DOM)
 end
 
-@inline function (bgc::LOBSTER)(::Val{:SRDOM}, x, y, z, t, NO₃, NH₄, P, Z, sPOM, bPOM, DOM, SRDOM, RDOM, PAR)
-    αᵖ = bgc.ammonia_fraction_of_exudate
-    γ = bgc.phytoplankton_exudation_fraction
-    μₚ = bgc.maximum_phytoplankton_growthrate
-    kₚₐᵣ = bgc.light_half_saturation
-    ψ = bgc.nitrate_ammonia_inhibition
-    kₙₒ₃ = bgc.nitrate_half_saturation
-    kₙₕ₄ = bgc.ammonia_half_saturation
-    αᶻ = bgc.ammonia_fraction_of_excriment
-    αᵈ = bgc.ammonia_fraction_of_detritus
-    μᵈ = bgc.small_detritus_remineralisation_rate
-    μᵈᵈ = bgc.large_detritus_remineralisation_rate
-    #μᵈᵒᵐ = bgc.dissolved_organic_breakdown_rate
-    μᶻ = bgc.zooplankton_excretion_rate
-    ρˢʳᵈᵒᵐ = bgc.semi_refractory_dissolved_organic_percentage
-    μˢʳᵈᵒᵐ = bgc.semi_refractory_dissolved_organic_breakdown_rate
-
-    return (ρˢʳᵈᵒᵐ * ((1 - αᵖ) * γ * μₚ * Lₚₐᵣ(PAR, kₚₐᵣ) * (Lₙₒ₃(NO₃, NH₄, ψ, kₙₒ₃) + Lₙₕ₄(NH₄, kₙₕ₄)) * P 
-            + (1 - αᶻ) * μᶻ * Z
-            + (1 - αᵈ) * μᵈ * sPOM
-            + (1 - αᵈ) * μᵈᵈ * bPOM)
-            - μˢʳᵈᵒᵐ * SRDOM)
-end
-
-@inline function (bgc::LOBSTER)(::Val{:RDOM}, x, y, z, t, NO₃, NH₄, P, Z, sPOM, bPOM, DOM, SRDOM, RDOM, PAR)
-    αᵖ = bgc.ammonia_fraction_of_exudate
-    γ = bgc.phytoplankton_exudation_fraction
-    μₚ = bgc.maximum_phytoplankton_growthrate
-    kₚₐᵣ = bgc.light_half_saturation
-    ψ = bgc.nitrate_ammonia_inhibition
-    kₙₒ₃ = bgc.nitrate_half_saturation
-    kₙₕ₄ = bgc.ammonia_half_saturation
-    αᶻ = bgc.ammonia_fraction_of_excriment
-    αᵈ = bgc.ammonia_fraction_of_detritus
-    μᵈ = bgc.small_detritus_remineralisation_rate
-    μᵈᵈ = bgc.large_detritus_remineralisation_rate
-    μᵈᵒᵐ = bgc.dissolved_organic_breakdown_rate
-    μᶻ = bgc.zooplankton_excretion_rate
-    μʳᵈᵒᵐ = bgc.refractory_dissolved_organic_breakdown_rate
-    ρʳᵈᵒᵐ = bgc.refractory_dissolved_organic_percentage
-    ηᵈᵒᵐ  = bgc.microbial_carbon_pump_efficiency
-
-    return (ρʳᵈᵒᵐ * ((1 - αᵖ) * γ * μₚ * Lₚₐᵣ(PAR, kₚₐᵣ) * (Lₙₒ₃(NO₃, NH₄, ψ, kₙₒ₃) + Lₙₕ₄(NH₄, kₙₕ₄)) * P 
-            + (1 - αᶻ) * μᶻ * Z
-            + (1 - αᵈ) * μᵈ * sPOM
-            + (1 - αᵈ) * μᵈᵈ * bPOM)
-            - μʳᵈᵒᵐ * RDOM
-            + ηᵈᵒᵐ * μᵈᵒᵐ * DOM)
-end
-
 # Planktons
-@inline function (bgc::LOBSTER)(::Val{:P}, x, y, z, t, NO₃, NH₄, P, Z, sPOM, bPOM, DOM, SRDOM, RDOM, PAR)
+@inline function (bgc::LOBSTER)(::Val{:P}, x, y, z, t, NO₃, NH₄, P, Z, sPOM, bPOM, DOM, PAR)
     γ = bgc.phytoplankton_exudation_fraction
     μₚ = bgc.maximum_phytoplankton_growthrate
     kₚₐᵣ = bgc.light_half_saturation
@@ -141,7 +84,7 @@ end
             - mᵖ * P^2)
 end
 
-@inline function (bgc::LOBSTER)(::Val{:Z}, x, y, z, t, NO₃, NH₄, P, Z, sPOM, bPOM, DOM, SRDOM, RDOM, PAR)
+@inline function (bgc::LOBSTER)(::Val{:Z}, x, y, z, t, NO₃, NH₄, P, Z, sPOM, bPOM, DOM, PAR)
     αᶻ = bgc.zooplankton_assimilation_fraction
     gᶻ = bgc.maximum_grazing_rate
     p̃ = bgc.phytoplankton_preference
@@ -156,7 +99,7 @@ end
 
 # Detritus
 
-@inline function (bgc::LOBSTER)(::Val{:sPOM}, x, y, z, t, NO₃, NH₄, P, Z, sPOM, bPOM, DOM, SRDOM, RDOM, PAR)
+@inline function (bgc::LOBSTER)(::Val{:sPOM}, x, y, z, t, NO₃, NH₄, P, Z, sPOM, bPOM, DOM, PAR)
     aᶻ = bgc.zooplankton_assimilation_fraction
     gᶻ = bgc.maximum_grazing_rate
     p̃ = bgc.phytoplankton_preference
@@ -174,7 +117,7 @@ end
             - μᵈ * sPOM)
 end
 
-@inline function (bgc::LOBSTER)(::Val{:bPOM}, x, y, z, t, NO₃, NH₄, P, Z, sPOM, bPOM, DOM, SRDOM, RDOM, PAR)
+@inline function (bgc::LOBSTER)(::Val{:bPOM}, x, y, z, t, NO₃, NH₄, P, Z, sPOM, bPOM, DOM, PAR)
     aᶻ = bgc.zooplankton_assimilation_fraction
     gᶻ = bgc.maximum_grazing_rate
     p̃ = bgc.phytoplankton_preference
