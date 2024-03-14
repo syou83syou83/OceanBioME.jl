@@ -169,8 +169,7 @@ Base.@kwdef struct SLatissima{AR, FT, U, P, F} <: BiogeochemicalParticles
     respiration_reference_A :: FT = 1.11e-4 * 24
     respiration_reference_B :: FT = 5.57e-5 * 24
     exudation_redfield_ratio :: FT = Inf
-    kelp_semi_refractory_dissolved_organic_percentage::FT = 0.0 # changed, kelp should be 0.03
-    kelp_refractory_dissolved_organic_percentage::FT = 0.0 # changed, kelp should be 0.56
+
     prescribed_velocity :: U = 0.1
 
     #position
@@ -241,9 +240,7 @@ adapt_structure(to, kelp::SLatissima) = SLatissima(adapt(to, kelp.architecture),
                                                    adapt(to, kelp.current_3),
                                                    adapt(to, kelp.respiration_reference_A),
                                                    adapt(to, kelp.respiration_reference_B),
-                                                   adapt(to, kelp.exudation_redfield_ratio), 
-                                                   adapt(to, kelp.kelp_semi_refractory_dissolved_organic_percentage),
-                                                   adapt(to, kelp.kelp_refractory_dissolved_organic_percentage),
+                                                   adapt(to, kelp.exudation_redfield_ratio),
                                                    adapt(to, kelp.prescribed_velocity),
                                                    adapt(to, kelp.x),
                                                    adapt(to, kelp.y),
@@ -313,16 +310,10 @@ end
         end
 
         if :DOM in bgc_tracers
-            tendencies.DOM[i, j, k] += (1 - p.kelp_semi_refractory_dissolved_organic_percentage - p.kelp_refractory_dissolved_organic_percentage) * node_scalefactor * p.frond_exudation[idx] / p.exudation_redfield_ratio
-            tendencies.SRDOM[i, j, k] += p.kelp_semi_refractory_dissolved_organic_percentage * node_scalefactor * p.frond_exudation[idx] / p.exudation_redfield_ratio
-            tendencies.RDOM[i, j, k] += p.kelp_refractory_dissolved_organic_percentage * node_scalefactor * p.frond_exudation[idx] / p.exudation_redfield_ratio
+            tendencies.DOM[i, j, k] += node_scalefactor * p.frond_exudation[idx] / p.exudation_redfield_ratio
         elseif :DON in bgc_tracers
-            tendencies.DON[i, j, k] += (1 - p.kelp_semi_refractory_dissolved_organic_percentage - p.kelp_refractory_dissolved_organic_percentage) * node_scalefactor * p.frond_exudation[idx] / p.exudation_redfield_ratio
-            tendencies.SRDON[i, j, k] += p.kelp_semi_refractory_dissolved_organic_percentage * node_scalefactor * p.frond_exudation[idx] / p.exudation_redfield_ratio
-            tendencies.RDON[i, j, k] += p.kelp_refractory_dissolved_organic_percentage * node_scalefactor * p.frond_exudation[idx] / p.exudation_redfield_ratio
-            tendencies.DOC[i, j, k] += (1 - p.kelp_semi_refractory_dissolved_organic_percentage - p.kelp_refractory_dissolved_organic_percentage) * node_scalefactor * p.frond_exudation[idx]
-            tendencies.SRDOC[i, j, k] += p.kelp_semi_refractory_dissolved_organic_percentage * node_scalefactor * p.frond_exudation[idx]
-            tendencies.RDOC[i, j, k] += p.kelp_refractory_dissolved_organic_percentage * node_scalefactor * p.frond_exudation[idx]
+            tendencies.DON[i, j, k] += node_scalefactor * p.frond_exudation[idx] / p.exudation_redfield_ratio
+            tendencies.DOC[i, j, k] += node_scalefactor * p.frond_exudation[idx]
         end
 
         if :bPOM in bgc_tracers
