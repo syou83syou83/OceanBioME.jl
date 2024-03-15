@@ -1,3 +1,4 @@
+# 12 means kappa is gaussian and Nz = 150
 # This is the example with SRDOC and RDOC, and changing relevant parameters, e.g. SRDOC percentage, so that SRDOC and RDOC are considered.
 # # Simple active particle example
 # In this example we will setup a simple 1D column with the [LOBSTER](@ref LOBSTER) biogeochemical model and active particles modelling the growth of sugar kelp. This demonstraits:
@@ -57,7 +58,8 @@ PAR⁰(x, y, t) = PAR_itp(mod(t, 364days))
 t_mldplus_node=[0.,55,85,100,300,364]
 mldplus_idealize=[280,420,420,40,40,280]
 mld_itp = LinearInterpolation((t_mldplus_node)days, mldplus_idealize)  #in seconds 
-κₜ(x, y, z, t) = 8e-2*max(1-(z+mld_itp(mod(t,364days))/2)^2/(mld_itp(mod(t,364days))/2)^2,0)+1e-4;
+# κₜ(x, y, z, t) = 8e-2*max(1-(z+mld_itp(mod(t,364days))/2)^2/(mld_itp(mod(t,364days))/2)^2,0)+1e-4;
+κₜ(x, y, z, t) = 0.0799*exp(-(z+mld_itp(mod(t,364days))/2)^2/(0.8*mld_itp(mod(t,364days))/2)^2)+1e-4         
 ##########################################################
 # ## Grid and PAR field
 # Define the grid and an extra Oceananigans field for the PAR to be stored in
@@ -67,7 +69,7 @@ mld_itp = LinearInterpolation((t_mldplus_node)days, mldplus_idealize)  #in secon
 architecture = CPU()
 duration= 2years
 Lx, Ly, Lz = 20, 20, 600
-Nx, Ny, Nz = 1, 1, 100
+Nx, Ny, Nz = 1, 1, 150
 grid = RectilinearGrid(architecture, size=(Nx, Ny, Nz), extent=(Lx, Ly, Lz))   ####change
 #PAR = Oceananigans.Fields.Field{Center, Center, Center}(grid)  
 
@@ -77,32 +79,25 @@ T = FunctionField{Center, Center, Center}(t_function, grid; clock)
 S = FunctionField{Center, Center, Center}(s_function, grid; clock)
 
 # ## Kelp Particle setup
-@info "Setting up kelp particles"
-n = 100 # number of kelp fronds
-z₀ = [-100:-1;]*1.0 # depth of kelp fronds   z₀ = [-100:-1;]*1.0   [-21:5:-1;]*1.0
-
-# kelp_particles = SLatissima.setup(;n, 
-#                                   x₀ = Lx/2, y₀ = Ly/2, z₀, 
-#                                   A₀ = 0.1, N₀ = 0.01, C₀ = 0.1, 
+# @info "Setting up kelp particles"
+# n = 100 # number of kelp fronds
+# z₀ = [-100:-1;]*1.0 # depth of kelp fronds   z₀ = [-100:-1;]*1.0   [-21:5:-1;]*1.0
+# kelp_particles = SLatissima(; architecture, 
+#                                   kelp_semi_refractory_dissolved_organic_percentage = 0.03,
+#                                   kelp_refractory_dissolved_organic_percentage = 0.56,
+#                                   x = arch_array(architecture, ones(n) * Lx / 2), 
+#                                   y = arch_array(architecture, ones(n) * Ly / 2), 
+#                                   z = arch_array(architecture, z₀), 
+#                                   A = arch_array(architecture, ones(n) * 0.1),
+#                                   N = arch_array(architecture, ones(n) * 0.01),
+#                                   C = arch_array(architecture, ones(n) * 0.1),
 #                                   latitude = 57.5,
-#                                   scalefactor = 450.0, 
-#                                   T = t_function, S = s_function, urel = 0.2, 
-#                                   optional_tracers = (:NH₄, :DIC, :bPON, :bPOC, :O₂, :DON, :DOC))
-kelp_particles = SLatissima(; architecture, 
-                                  kelp_semi_refractory_dissolved_organic_percentage = 0.03,
-                                  kelp_refractory_dissolved_organic_percentage = 0.56,
-                                  x = arch_array(architecture, ones(n) * Lx / 2), 
-                                  y = arch_array(architecture, ones(n) * Ly / 2), 
-                                  z = arch_array(architecture, z₀), 
-                                  A = arch_array(architecture, ones(n) * 0.1),
-                                  N = arch_array(architecture, ones(n) * 0.01),
-                                  C = arch_array(architecture, ones(n) * 0.1),
-                                  latitude = 57.5,
-                                  scalefactor = 450.0,
-                                  prescribed_velocity = 0.1, 
-                                  # pescribed_temperature = t_function,  ####change
-                                  # pescribed_salinity = s_function      ####change
-                                  )
+#                                   scalefactor = 450.0,
+#                                   prescribed_velocity = 0.1, 
+#                                   # pescribed_temperature = t_function,  ####change
+#                                   # pescribed_salinity = s_function      ####change
+#                                   )
+
 # Specify the boundary conditions for DIC and O₂ based on the air-sea CO₂ and O₂ flux
 # CO₂_flux = GasExchange(; gas = :CO₂, temperature = t_function, salinity = s_function, air_concentration = 400)
 CO₂_flux = GasExchange(; gas = :CO₂, air_concentration = 400)
@@ -123,11 +118,11 @@ model = NonhydrostaticModel(; grid,
                                                           oxygen = true,
                                                           variable_redfield = true,
                                                           open_bottom = true,
-                                                          particles = kelp_particles),
+                                                          # particles = kelp_particles
+                                                          ),
                               boundary_conditions = (DIC = FieldBoundaryConditions(top = CO₂_flux),
                                                      O₂ = FieldBoundaryConditions(top = O₂_flux), ),
                               auxiliary_fields = (; T, S)  ####change
-                            #   particles = kelp_particles
                               )
 
 Pᵢ(x, y, z)= (tanh((z+250)/100)+1)/2*(0.038)+0.002           #in mmolN m^-3
@@ -160,7 +155,7 @@ set!(model, P=Pᵢ, Z=Zᵢ, sPON=sPONᵢ, bPON=bPONᵢ, sPOC=sPOCᵢ, bPOC=bPOC�
 # - Store the model and particles output
 # - Prevent the tracers from going negative from numerical error (see discussion of this in the [positivity preservation](@ref pos-preservation) implimentation page)
 
-simulation = Simulation(model, Δt=3.5minutes, stop_time=duration) 
+simulation = Simulation(model, Δt=2minutes, stop_time=duration) 
 
 # simulation.callbacks[:couple_particles] = Callback(Particles.infinitesimal_particle_field_coupling!; callsite = TendencyCallsite())
 
@@ -171,9 +166,9 @@ progress_message(sim) = @printf("Iteration: %04d, time: %s, Δt: %s, wall time: 
                                                         prettytime(sim.run_wall_time))                
 simulation.callbacks[:progress] = Callback(progress_message, IterationInterval(100))
 
-filename = "kelp450_11_rdoc_real"
+filename = "withoutkelp_12_rdoc_real"
 simulation.output_writers[:profiles] = JLD2OutputWriter(model, model.tracers, filename = "$filename.jld2", schedule = TimeInterval(1day), overwrite_existing=true) #merge(model.tracers, model.auxiliary_fields),
-simulation.output_writers[:particles] = JLD2OutputWriter(model, (; kelp_particles), filename = "$(filename)_particles.jld2", schedule = TimeInterval(1day), overwrite_existing = true)
+# simulation.output_writers[:particles] = JLD2OutputWriter(model, (; kelp_particles), filename = "$(filename)_particles.jld2", schedule = TimeInterval(1day), overwrite_existing = true)
 
 
 #simulation.callbacks[:timestep] = Callback(update_timestep!, IterationInterval(1), (c_forcing=0.1, c_adv=0.5, c_diff=0.5, w = 200/day, relaxation=0.95), TimeStepCallsite())

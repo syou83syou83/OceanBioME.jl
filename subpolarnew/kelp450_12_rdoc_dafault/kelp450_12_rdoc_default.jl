@@ -1,4 +1,5 @@
-# This is the example with SRDOC and RDOC, but with the default relevant parameters, e.g. SRDOC percentage, which assume only DOC is considered.
+# default means no rdoc
+# This is the example with SRDOC and RDOC, and changing relevant parameters, e.g. SRDOC percentage, so that SRDOC and RDOC are considered.
 # # Simple active particle example
 # In this example we will setup a simple 1D column with the [LOBSTER](@ref LOBSTER) biogeochemical model and active particles modelling the growth of sugar kelp. This demonstraits:
 # - How to setup OceanBioME's biogeochemical models
@@ -57,7 +58,8 @@ PAR⁰(x, y, t) = PAR_itp(mod(t, 364days))
 t_mldplus_node=[0.,55,85,100,300,364]
 mldplus_idealize=[280,420,420,40,40,280]
 mld_itp = LinearInterpolation((t_mldplus_node)days, mldplus_idealize)  #in seconds 
-κₜ(x, y, z, t) = 8e-2*max(1-(z+mld_itp(mod(t,364days))/2)^2/(mld_itp(mod(t,364days))/2)^2,0)+1e-4;
+# κₜ(x, y, z, t) = 8e-2*max(1-(z+mld_itp(mod(t,364days))/2)^2/(mld_itp(mod(t,364days))/2)^2,0)+1e-4;
+κₜ(x, y, z, t) = 0.0799*exp(-(z+mld_itp(mod(t,364days))/2)^2/(0.8*mld_itp(mod(t,364days))/2)^2)+1e-4         
 ##########################################################
 # ## Grid and PAR field
 # Define the grid and an extra Oceananigans field for the PAR to be stored in
@@ -67,7 +69,7 @@ mld_itp = LinearInterpolation((t_mldplus_node)days, mldplus_idealize)  #in secon
 architecture = CPU()
 duration= 2years
 Lx, Ly, Lz = 20, 20, 600
-Nx, Ny, Nz = 1, 1, 100
+Nx, Ny, Nz = 1, 1, 150
 grid = RectilinearGrid(architecture, size=(Nx, Ny, Nz), extent=(Lx, Ly, Lz))   ####change
 #PAR = Oceananigans.Fields.Field{Center, Center, Center}(grid)  
 
@@ -89,6 +91,8 @@ z₀ = [-100:-1;]*1.0 # depth of kelp fronds   z₀ = [-100:-1;]*1.0   [-21:5:-1
 #                                   T = t_function, S = s_function, urel = 0.2, 
 #                                   optional_tracers = (:NH₄, :DIC, :bPON, :bPOC, :O₂, :DON, :DOC))
 kelp_particles = SLatissima(; architecture, 
+                                  # kelp_semi_refractory_dissolved_organic_percentage = 0.03,
+                                  # kelp_refractory_dissolved_organic_percentage = 0.56,
                                   x = arch_array(architecture, ones(n) * Lx / 2), 
                                   y = arch_array(architecture, ones(n) * Ly / 2), 
                                   z = arch_array(architecture, z₀), 
@@ -97,7 +101,7 @@ kelp_particles = SLatissima(; architecture,
                                   C = arch_array(architecture, ones(n) * 0.1),
                                   latitude = 57.5,
                                   scalefactor = 450.0,
-                                  prescribed_velocity = 0.2, 
+                                  prescribed_velocity = 0.1, 
                                   # pescribed_temperature = t_function,  ####change
                                   # pescribed_salinity = s_function      ####change
                                   )
@@ -111,6 +115,11 @@ model = NonhydrostaticModel(; grid,
                               timestepper = :RungeKutta3,
                               closure = ScalarDiffusivity(ν=κₜ, κ=κₜ), 
                               biogeochemistry = LOBSTER(; grid,
+                                                          # semi_refractory_dissolved_organic_percentage = 0.17, # changed, should be 0.17, 0.0
+                                                          # refractory_dissolved_organic_percentage = 0.3, # changed, should be 0.3, 0.0
+                                                          # semi_refractory_dissolved_organic_breakdown_rate = 3.86e-8, # changed, should be 3.86e-8, , 0.0# 1/s
+                                                          # refractory_dissolved_organic_breakdown_rate = 3.17e-10, # changed, should be 3.17e-10, , 0.0# 1/s
+                                                          # microbial_carbon_pump_efficiency = 0.06, # changed, should be 0.06, 0.0
                                                           surface_photosynthetically_active_radiation = PAR⁰,
                                                           carbonates = true,
                                                           oxygen = true,
@@ -153,7 +162,7 @@ set!(model, P=Pᵢ, Z=Zᵢ, sPON=sPONᵢ, bPON=bPONᵢ, sPOC=sPOCᵢ, bPOC=bPOC�
 # - Store the model and particles output
 # - Prevent the tracers from going negative from numerical error (see discussion of this in the [positivity preservation](@ref pos-preservation) implimentation page)
 
-simulation = Simulation(model, Δt=3.5minutes, stop_time=duration) 
+simulation = Simulation(model, Δt=2minutes, stop_time=duration) 
 
 # simulation.callbacks[:couple_particles] = Callback(Particles.infinitesimal_particle_field_coupling!; callsite = TendencyCallsite())
 
@@ -164,7 +173,7 @@ progress_message(sim) = @printf("Iteration: %04d, time: %s, Δt: %s, wall time: 
                                                         prettytime(sim.run_wall_time))                
 simulation.callbacks[:progress] = Callback(progress_message, IterationInterval(100))
 
-filename = "kelp450_11_rdoc"
+filename = "kelp450_12_rdoc_default"
 simulation.output_writers[:profiles] = JLD2OutputWriter(model, model.tracers, filename = "$filename.jld2", schedule = TimeInterval(1day), overwrite_existing=true) #merge(model.tracers, model.auxiliary_fields),
 simulation.output_writers[:particles] = JLD2OutputWriter(model, (; kelp_particles), filename = "$(filename)_particles.jld2", schedule = TimeInterval(1day), overwrite_existing = true)
 
